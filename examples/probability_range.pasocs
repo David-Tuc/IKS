@@ -1,0 +1,6 @@
+0.6::sure;0.2::not_sure.
+
+traffic :- sure.
+{traffic} :- not_sure.
+
+#query(traffic).

@@ -1,23 +1,11 @@
-# PASOCS  
-##### (Parallel Approximate SOlver for the Credal Semantics)
+# IKS solver/learner
+##### (Incomplete Knowledge Semantics)
 
-This repository contains the compiled executable for PASOCS for different platforms. PASOCS is a solver for probabilistic logic programs (PLP) interpreted under the Credal semantics. Under this semantics, the logic program need not be stratified: they can accept multiple worlds (called answer sets). 
+This repository contains the compiled executable for the implementation of an IKS solver and learner. IKS solver/learner is a solver for probabilistic ASP (PASP) interpreted under the Incomplete Knowledge Semantics that has been updated to allow the use. Under this semantics, the logic program need not be stratified: they can accept multiple worlds (called answer sets). 
 
-It allows to model complex relational model using first-order logic rules and represent non additive probabilities. We provide a few examples of how this semantics (and PASOCS) might be use, including computing Belief and Plausibility functions in the Dempster-Schaffer theory. It allows for modeling probabilistic events in the case of lack of knowledge, without having to make an assumption on the distribution of unknown events.  
+The semantics is described in our paper (Link to come soon)
 
-This solver main goal is to allow for exact inference by enumerating all the possible worlds and approximate inference through sampling. It makes use of parallelization to help speed-up computation. At the moment, the solver only allows for shared memory parallelization but will allow in the future using multiple nodes. 
-
-## What is the Credal Semantics ?
-
-The Credal semantics is a probabilistic semantics for logic programs based on the Answer set Semantics for ASP. It allows a total choice (of the probabilistic variables) to yield multiple worlds/models (answer sets) and does not make any assumption as to how to redistribute the probability to each world/model (answer set). 
-
-The Credal semantics of a PLP is thus not a single probability distribution but a set of probability distributions, that is characterized by its lower and upper bound. PASOCS returns these lower and upper bounds for each query. 
-
-For more details about the credal semantics, we invite you to check out these papers:
-
-- [The joy of probabilistic answer set programming](http://sites.poli.usp.br/p/fabio.cozman/Publications/Article/cozman-isipta2019b.pdf)
-- [On the semantics and complexity of probabilistic logic programs](http://sites.poli.usp.br/p/fabio.cozman/Publications/Journal/cozman-maua-jair2017F.pdf)
-- [Complexity results for probabilistic answer set programming](http://sites.poli.usp.br/p/fabio.cozman/Publications/Journal/maua-cozman-ijar2020F.pdf)
+This solver is based on the PASOCS solver for the Credal Semantic, and retains all of its features. On can find the original PASOCS solver in the pasocs branch, however the IKS solver offer new features
 
 ## Used third party tools
 
@@ -25,43 +13,36 @@ PASOCS makes uses at the moment of the following third party tools:
 
 - [Clingo](https://github.com/potassco/clingo) ([License](https://github.com/potassco/clingo/blob/master/LICENSE.md))
 
+## Prediction under the IKS
 
-## Sampling algorithms
-
-PASOCS provide an exact inference algorithm together with three sampling algorithms: naive, Metropolis–Hastings MCMC and (block) Gibbs MCMC. These sampling algorithms sample the total choices.
-
-While exact inference doesn't require hyper-parameters, the sampling algorithm need stopping criteria, and extra for the MCMC methods. **More details about the parameters are given in the command line options bellow.**
-
-### Stopping criteria
-
-PASOCS accepts multiple queries in parallel, each possibly having different evidence. As so, we do not define only one maximum number of samples to take. Indeed, PASOCS keeps counts for each queries of how many samples made the evidence true, meaning that a query with an evidence that has very low probability might have rejected most of the samples taken. To take this into account, we have a hyper-parameter called `min_samples` which states that each query should at least have counted `min_samples` non-rejected samples. To avoid the system continuing ad aeternam is a query has a evidence with extremely low probability, the user can define a parameter `max_samples` which is the hard limit on how many samples the system can take in total.
-
-We also provide another stopping criteria in the form of an error bound heuristic using the TCL. The system computes the error bounds on the prediction (as we are estimating bernoulli variables) given a user define [`percentile`](https://en.wikipedia.org/wiki/Percentile), and the `threshold` that we would like this uncertainty to be under. This is in no case a hard constraints, it is a statistical estimate and does not guaranty that the true probability lies in the uncertainty segment outputed. 
-
-To deactivate any of the stopping criteria (`min_samples`, `max_samples` and `threshold`) the user can simply set it to -1.
-
-### Sampling parameters for MCMC
-
-For the MCMC methods, we also need to define how many `burn` steps to execute before using the Markoc Chain. For the MH MCMC sampling, our hidden markov chain considers the current total choice, and switches the value each probabilistic fact with a preset probability `mh_prob`. For the Gibbs MCMC sampling, the user can define the size of the block by setting the `gibbs_block` parameter.
+The IKS is implemented only for the full inference and not for sampling. (For details of sampling under the CS, see the pasocs branch readme). 
 
 ## Installation
 
-We distribute the compiled version of the software, so to run it on your computer select the appropriate folder depending on your OS and run the command line `pasocs` in the folder which contains the executable with the libraries.
+### Executable 
+We distribute the compiled version of the software, so to run it on your computer select the appropriate folder depending on your OS and run the command line `pasocsbin` in the folder which contains the executable with the libraries.
 It is important to keep the dynamic libraries (.dll or .so) in the folder with the PASOCS executable.
+
+At the moment, CUDA (because of Pytorch) needs to be installed on the machine to run. We will soon provide a SINGULARITY container to run seemlessly the solver.
+
+### Library
+To use the solver/learner as a C++ library, one needs to use the content of the library folder and add it to the project. Also, one needs to use in the same project Pytorch, as the libpasocs requires pytorch linking. If an example environment is needed, please contact us directly.
+
+The C++ header file is given in the library folder.
 
 ## How do I use it ?
 
-### Running PASOCS
+### Running IKS
 
 To use PASOCS, run the command line: 
 
 ```
-pasocs <pasocs_program_path> [--options...]
+pasocsbin <pasocs_program_path> [--options...]
 ```
 for linux
 
 ```
-pasocs.exe <pasocs_program_path> [--options...]
+pasocsbin.exe <pasocs_program_path> [--options...]
 ``` 
 for windows
 
@@ -70,12 +51,12 @@ for windows
 If you have cloned this repository, from the beginning the following command should work (placing you shell in the appropriate folder)
 
 ```
-pasocs ../examples/simple.pasocs
+pasocsbin ../examples/simple.pasocs
 ```
 for linux
 
 ```
-pasocs.exe ../examples/simple.pasocs
+pasocsbin.exe ../examples/simple.pasocs
 ``` 
 for windows
 
@@ -83,7 +64,7 @@ for windows
 
 Here is an example of command line with options (detailed below)
 ```
-pasocs test_lp_files/test.pasocs --n_cpus 4 -q wind(d1) -m 2 -n_min 10000 -ut 0.1 -hm 0.3
+pasocsbin test_lp_files/test.pasocs --n_cpus 4 -q wind(d1) -m 2 -n_min 10000 -ut 0.1 -hm 0.3
 ```
 
 ### How do I write a PASOCS program
@@ -105,8 +86,8 @@ walk(X) :- var1(X), wake_up, not run(X).
 sick(X) :- var1(X), run(X), tired(X).
 sick(X) :- var1(X), walk(X), not warm(X).
 
-#query(sick(d1)). 
-#query(sick(d2)). 
+#query(sick(d1)). [optim=1]
+#query(sick(d2)). [optim=0.4]
 ```
 
 It has one ground probabilistic fact `0.4::wake_up` and a 4 non-ground probabilistic facts (line 1-4). Then the logic program is defined and finally the queries. 
@@ -182,7 +163,33 @@ As shown, queries are form of the queries atoms and of evidence. Moreover, we ca
 - `#query(a;b|d:true).` asks what is the probability of either `a` or `b` to be true given that `d` is true.
 - `#query(a;b, not c|d:true).` asks what is the probability that either `a` is true or `b` is true and `c` is false given that `d` is true.
 
-### Command like options
+### Optimism and OWA operator
+
+The IKS is based on the use of OWA operator and optimism. To set the optism, add the following syntax after a query: "[optim=i]". Examples:
+
+```
+#query(a, not b, c). [optim=1]
+#query(not c). [optim=0]
+#query(a|b:true). [optim=2]
+#query(a|b:true). [optim=0.4]
+```
+
+Where `i` is either an optimism value in [0,1] or the keyword '2' that signals the solver to assign the same probability to all answer set (Weq in the paper).
+
+The solver offers two different ways to generate the OWA operators:
+ - Solving an optimization problem
+ - Using matrices (used in the paper, Gaussian shaped OWA)
+
+To set the method to use, use the following command line option: `--owa_method <INT>`, with <INT>={0,1}. 0=matrix, 1=optimisation
+
+### Saving and loading the OWA operators 
+
+It is possible to save/load the owa operators to avoid having to re-compute them each time. It will be save as a JSON format. To do so, use the following command line options:
+  
+  - `--save_owa <PATH>`: where <PATH> is a file path to save the file into.
+  - `--load_owa <PATH>`: where <PATH> is a file path to load the file from.
+
+### Command line options
 
 When calling PASOCS, we would more often than not define a series of options. Here is an example:
 ```
